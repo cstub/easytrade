@@ -1,0 +1,5 @@
+// Which lab services have exported spans in a window (identity fields as stored).
+fetch spans, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}"
+| summarize spans = countDistinct(span.id), server = countIf(span.kind == "server"), client = countIf(span.kind == "client"), first = min(start_time), last = max(start_time), by: {service.name, service.namespace, deployment.environment.name, service.version, telemetry.sdk.language}
+| sort service.name asc

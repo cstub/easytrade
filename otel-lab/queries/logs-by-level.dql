@@ -1,0 +1,5 @@
+// Log records of one lab service in a window, grouped by severity.
+fetch logs, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}" and service.name == "{{ .service }}"
+| summarize records = count(), with_trace = countIf(isNotNull(trace_id)), by: {loglevel, status}
+| sort records desc

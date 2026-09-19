@@ -1,0 +1,5 @@
+// Which lab services have exported logs in a window (identity fields as stored).
+fetch logs, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}"
+| summarize records = count(), errors = countIf(loglevel == "ERROR"), with_trace = countIf(isNotNull(trace_id)), first = min(timestamp), last = max(timestamp), by: {service.name, service.namespace, deployment.environment.name, telemetry.sdk.language}
+| sort service.name asc

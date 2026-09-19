@@ -1,0 +1,7 @@
+2026-09-19T08:21:03Z run run-20260919T082103Z-0944  base=http://127.0.0.1:8080 ns=easytrade-otel-lab batch=6 evidence=/root/workspace/easytrade/otel-lab/evidence/run-20260919T082103Z-0944
+READY: all probes OK at http://127.0.0.1:8080
+2026-09-19T08:21:03Z account demouser -> id 3
+ Container easytrade-otel-lab-aggregator-service-1 Paused 
+paused aggregator-service
+Longrunningtransaction scheduler stopped.
+2026-09-19T08:21:04Z == case baseline

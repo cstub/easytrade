@@ -1,0 +1,10 @@
+{
+  "name": "easytrade-otel-lab-node-agent",
+  "private": true,
+  "description": "Pinned official OpenTelemetry Node.js zero-code instrumentation packages, mounted read-only into offerservice (see otel-lab/compose.otel.yaml).",
+  "dependencies": {
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "0.80.0",
+    "@opentelemetry/winston-transport": "0.32.0"
+  }
+}

@@ -1,0 +1,191 @@
+# EasyTrade OTel lab - Compose overlay.
+# Usage (always via otel-lab/scripts/lab.sh):
+#   docker compose -p easytrade-otel-lab --project-directory <repo> -f compose.dev.yaml -f otel-lab/compose.otel.yaml ...
+# Design:
+#   * images are built from THIS checkout with the upstream Dockerfiles (compose.dev.yaml build contexts) and tagged
+#     easytrade-otel-lab/<service>:${LAB_IMAGE_TAG}; instrumentation is injected purely by startup configuration
+#     (read-only bind mounts of the pinned official agents under otel-lab/agents + environment variables).
+#   * exported ports: only the reverse proxy, bound to 127.0.0.1:${LAB_HTTP_PORT}.
+#   * the OTLP endpoint + Authorization header live in ${HOME}/.config/easytrade-otel-lab/otel.env (generated, 0600).
+
+x-otel-common: &otel-common
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=${LAB_NAMESPACE:-easytrade-otel-lab},deployment.environment.name=${LAB_NAMESPACE:-easytrade-otel-lab},service.version=${LAB_IMAGE_TAG:-dev}"
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_TRACES_EXPORTER: otlp
+  OTEL_LOGS_EXPORTER: otlp
+  OTEL_METRICS_EXPORTER: none
+  OTEL_TRACES_SAMPLER: always_on
+  OTEL_PROPAGATORS: tracecontext,baggage
+  OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
+  OTEL_BSP_SCHEDULE_DELAY: "2000"
+  OTEL_BLRP_SCHEDULE_DELAY: "2000"
+
+x-otel-java-env: &otel-java-env
+  <<: *otel-common
+  JAVA_TOOL_OPTIONS: "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx${LAB_JAVA_XMX:-256m}"
+  OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS: x-lab-run-id,x-lab-case
+  OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS: x-lab-run-id
+  OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES: "true"
+
+x-otel-dotnet-env: &otel-dotnet-env
+  <<: *otel-common
+  CORECLR_ENABLE_PROFILING: "1"
+  CORECLR_PROFILER: "{918728DD-259F-4A6A-AC2B-B85E1B658318}"
+  CORECLR_PROFILER_PATH: /otel/dotnet/linux-musl-x64/OpenTelemetry.AutoInstrumentation.Native.so
+  DOTNET_STARTUP_HOOKS: /otel/dotnet/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll
+  OTEL_DOTNET_AUTO_HOME: /otel/dotnet
+  DOTNET_EnableDiagnostics: "1"
+  OTEL_DOTNET_AUTO_METRICS_ENABLED: "false"
+  OTEL_DOTNET_AUTO_LOGS_INCLUDE_FORMATTED_MESSAGE: "true"
+  OTEL_DOTNET_AUTO_TRACES_ASPNETCORE_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS: X-Lab-Run-Id,X-Lab-Case
+  OTEL_DOTNET_AUTO_TRACES_HTTP_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS: X-Lab-Run-Id
+  OTEL_DOTNET_AUTO_LOG_DIRECTORY: /tmp/otel-dotnet-auto
+
+x-otel-node-env: &otel-node-env
+  <<: *otel-common
+  NODE_PATH: /otel/node/node_modules
+  NODE_OPTIONS: "--require @opentelemetry/auto-instrumentations-node/register"
+  OTEL_NODE_RESOURCE_DETECTORS: "env,host,os,process"
+  OTEL_NODE_DISABLED_INSTRUMENTATIONS: "fs,dns,net"
+
+x-java-volumes: &java-volumes
+  - ./otel-lab/agents/java:/otel/java:ro
+x-dotnet-volumes: &dotnet-volumes
+  - ./otel-lab/agents/dotnet:/otel/dotnet:ro
+x-node-volumes: &node-volumes
+  - ./otel-lab/agents/node:/otel/node:ro
+
+x-secret-env: &secret-env
+  - path: ${HOME}/.config/easytrade-otel-lab/otel.env
+    required: true
+
+services:
+  # ---------------- infrastructure (not instrumented) ----------------
+  db:
+    image: easytrade-otel-lab/db:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    environment:
+      MSSQL_MEMORY_LIMIT_MB: "${LAB_MSSQL_MEMORY_MB:-1536}"
+  rabbitmq:
+    image: easytrade-otel-lab/rabbitmq:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+  frontendreverseproxy:
+    image: easytrade-otel-lab/frontendreverseproxy:${LAB_IMAGE_TAG:-dev}
+    ports: !override
+      - "127.0.0.1:${LAB_HTTP_PORT:-8080}:80"
+  frontend:
+    image: easytrade-otel-lab/frontend:${LAB_IMAGE_TAG:-dev}
+    build: !override
+      context: src/frontend
+      dockerfile: Dockerfile
+    volumes: !reset []
+    ports: !reset []
+  calculationservice:
+    image: easytrade-otel-lab/calculationservice:${LAB_IMAGE_TAG:-dev}
+
+  # ---------------- Java 21 / Spring Boot 4 (OTel Java agent) ----------------
+  accountservice:
+    image: easytrade-otel-lab/accountservice:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *java-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-java-env
+      OTEL_SERVICE_NAME: accountservice
+  credit-card-order-service:
+    image: easytrade-otel-lab/credit-card-order-service:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *java-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-java-env
+      OTEL_SERVICE_NAME: credit-card-order-service
+      WORK_DELAY: "${LAB_CARD_WORK_DELAY:-60}"
+      WORK_RATE: "${LAB_CARD_WORK_RATE:-180}"
+  engine:
+    image: easytrade-otel-lab/engine:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *java-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-java-env
+      OTEL_SERVICE_NAME: engine
+  feature-flag-service:
+    image: easytrade-otel-lab/feature-flag-service:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *java-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-java-env
+      OTEL_SERVICE_NAME: feature-flag-service
+  third-party-service:
+    image: easytrade-otel-lab/third-party-service:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *java-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-java-env
+      OTEL_SERVICE_NAME: third-party-service
+      COURIER_DELAY: "${LAB_3P_DELAY:-60}"
+      COURIER_RATE: "${LAB_3P_RATE:-180}"
+      MANUFACTURE_DELAY: "${LAB_3P_DELAY:-60}"
+      MANUFACTURE_RATE: "${LAB_3P_RATE:-180}"
+  contentcreator:
+    image: easytrade-otel-lab/contentcreator:${LAB_IMAGE_TAG:-dev}
+    volumes: *java-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-java-env
+      OTEL_SERVICE_NAME: contentcreator
+
+  # ---------------- .NET 8 / ASP.NET Core on Alpine (OTel .NET automatic instrumentation) ----------------
+  broker-service:
+    image: easytrade-otel-lab/broker-service:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *dotnet-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-dotnet-env
+      OTEL_SERVICE_NAME: broker-service
+      FEATURE_FLAG_CACHE_DURATION_S: "${LAB_BROKER_FLAG_CACHE_S:-5}"
+  loginservice:
+    image: easytrade-otel-lab/loginservice:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *dotnet-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-dotnet-env
+      OTEL_SERVICE_NAME: loginservice
+  manager:
+    image: easytrade-otel-lab/manager:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *dotnet-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-dotnet-env
+      OTEL_SERVICE_NAME: manager
+
+  # ---------------- Node.js / Express (OTel Node.js auto-instrumentations) ----------------
+  offerservice:
+    image: easytrade-otel-lab/offerservice:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+    volumes: *node-volumes
+    env_file: *secret-env
+    environment:
+      <<: *otel-node-env
+      OTEL_SERVICE_NAME: offerservice
+
+  # ---------------- Go (no in-process zero-code instrumentation applied - see COVERAGE.md) ----------------
+  pricing-service:
+    image: easytrade-otel-lab/pricing-service:${LAB_IMAGE_TAG:-dev}
+    ports: !reset []
+  aggregator-service:
+    image: easytrade-otel-lab/aggregator-service:${LAB_IMAGE_TAG:-dev}
+
+  # ---------------- background load (opt-in profile) ----------------
+  loadgen:
+    image: easytrade-otel-lab/loadgen:${LAB_IMAGE_TAG:-dev}
+    profiles: ["load"]
+    environment:
+      CONCURRENCY: "${LAB_LOADGEN_CONCURRENCY:-2}"
+      LOAD_TYPE: constant

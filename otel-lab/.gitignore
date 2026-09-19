@@ -1,0 +1,7 @@
+# downloaded instrumentation binaries (fetched by scripts/fetch-agents.sh with pinned checksums)
+agents/java/
+agents/dotnet/
+agents/*.zip
+agents/node/node_modules/
+# local scratch
+tmp/
