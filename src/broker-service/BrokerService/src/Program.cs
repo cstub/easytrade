@@ -33,7 +33,16 @@ builder.Services.AddDbContext<BrokerDbContext>(options =>
 );
 
 // Clear default logging providers and and new ones
-builder.Logging.ClearProviders();
+// OTel lab: ClearProviders() would also remove the ILogger bridge that the OpenTelemetry .NET automatic
+// instrumentation registers when the LoggingBuilder is constructed (before this code runs). Remove only the
+// built-in Microsoft providers instead, so console output stays as before and the injected provider survives.
+foreach (var descriptor in builder.Services
+    .Where(d => d.ServiceType == typeof(ILoggerProvider)
+        && (d.ImplementationType?.Namespace ?? string.Empty).StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
+    .ToList())
+{
+    builder.Services.Remove(descriptor);
+}
 builder.Logging.AddCustomLogger(options =>
 {
     options.SkipString = "EasyTrade.BrokerService.";

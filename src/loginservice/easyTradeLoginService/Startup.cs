@@ -52,7 +52,16 @@ namespace easyTradeLoginService
             }));
 
             services.AddLogging(logOptions => {
-                logOptions.ClearProviders();
+                // OTel lab: ClearProviders() would also remove the ILogger bridge that the OpenTelemetry .NET automatic
+                // instrumentation registers when the LoggingBuilder is constructed (before this code runs). Remove only the
+                // built-in Microsoft providers instead, so console output stays as before and the injected provider survives.
+                foreach (var descriptor in logOptions.Services
+                    .Where(d => d.ServiceType == typeof(ILoggerProvider)
+                        && (d.ImplementationType?.Namespace ?? string.Empty).StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
+                    .ToList())
+                {
+                    logOptions.Services.Remove(descriptor);
+                }
                 logOptions.AddSimpleConsole(consoleOptions => {
                     consoleOptions.TimestampFormat = "dd/MM/yy HH:mm:ss ";
                 });
