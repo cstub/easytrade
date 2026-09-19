@@ -2,21 +2,9 @@
 # EasyTrade OTel lab control script. Run from anywhere; all paths are derived from the checkout.
 set -euo pipefail
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_DIR="$(cd "$LAB_DIR/.." && pwd)"
-export LAB_DIR REPO_DIR
-export LAB_PROJECT="${LAB_PROJECT:-easytrade-otel-lab}"
-export LAB_HTTP_PORT="${LAB_HTTP_PORT:-8080}"
-export LAB_NAMESPACE="${LAB_NAMESPACE:-easytrade-otel-lab}"
-export LAB_BASE_URL="${LAB_BASE_URL:-http://127.0.0.1:${LAB_HTTP_PORT}}"
+# shellcheck source=lab-env.sh
+source "$LAB_DIR/scripts/lab-env.sh"
 CFG_DIR="${EASYTRADE_LAB_CONFIG_DIR:-$HOME/.config/easytrade-otel-lab}"
-
-git_tag() {
-  local sha dirty=""
-  sha="$(git -C "$REPO_DIR" rev-parse --short=12 HEAD)"
-  if [ -n "$(git -C "$REPO_DIR" status --porcelain -- src compose.dev.yaml)" ]; then dirty="-dirty"; fi
-  echo "${sha}${dirty}"
-}
-export LAB_IMAGE_TAG="${LAB_IMAGE_TAG:-$(git_tag)}"
 
 compose() {
   docker compose -p "$LAB_PROJECT" --project-directory "$REPO_DIR" \

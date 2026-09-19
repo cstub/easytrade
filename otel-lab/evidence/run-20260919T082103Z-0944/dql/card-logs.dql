@@ -1,0 +1,7 @@
+// Raw ERROR log samples of one lab service in a window (bounded).
+fetch logs, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}" and service.name == "{{ .service }}"
+| filter loglevel == "ERROR"
+| fields timestamp, loglevel, status, service.name, service.namespace, deployment.environment.name, trace_id, span_id, log.source, content
+| sort timestamp asc
+| limit 20

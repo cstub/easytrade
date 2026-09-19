@@ -1,0 +1,5 @@
+// All spans of one lab service in a window grouped by kind and HTTP status (shows why CLIENT/INTERNAL spans are excluded).
+fetch spans, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}" and service.name == "{{ .service }}"
+| summarize spans = countDistinct(span.id), by: {span.kind, http.request.method, http.route, http.response.status_code, span.status_code}
+| sort spans desc

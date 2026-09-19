@@ -1,0 +1,6 @@
+// Spans of the two services taking part in an app-to-app HTTP call, for parent/child verification (bounded).
+fetch spans, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}" and in(service.name, array("{{ .caller }}", "{{ .callee }}"))
+| fields start_time, trace.id, span.id, span.parent_id, span.kind, service.name, http.request.method, http.route, url.full, url.path, http.response.status_code, `http.request.header.x-lab-run-id`
+| sort start_time asc
+| limit 200

@@ -1,0 +1,6 @@
+// Aggregate of qualifying incoming invocations (unique server spans / traces) for one lab service and window.
+fetch spans, from:"{{ .start }}", to:"{{ .end }}"
+| filter service.namespace == "{{ .ns }}" and service.name == "{{ .service }}"
+| filter span.kind == "server"
+| filter http.response.status_code >= 500 and http.response.status_code <= 599
+| summarize server_spans = countDistinct(span.id), traces = countDistinct(trace.id), min_status = min(http.response.status_code), max_status = max(http.response.status_code), first = min(start_time), last = max(start_time), by: {service.name, http.route}

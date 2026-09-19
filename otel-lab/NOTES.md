@@ -127,3 +127,76 @@ second agent can review the reasoning as well as the outcome. Timestamps come fr
   `Microsoft.Extensions.Logging.*` namespaces (Console/Debug/EventSource). The apps' own console providers are
   re-added by their existing code, so console output is unchanged; the OpenTelemetry provider survives.
   This is the "logging bridge/provider change" the task allows when configuration alone does not suffice.
+
+### 4.3 Restart on the fixed images (08:19-08:21)
+
+* `lab.sh build` (fully cached) + `lab.sh up` recreated all containers under the new tag `65bf1f366e28`; readiness
+  took ~90 s (the proxy answered 502 for feature-flag-service until the JVM was up).
+* Within a minute, stored logs from broker-service, loginservice and manager appeared
+  (`telemetry.sdk.language == "dotnet"`), request-scoped ones with `trace_id`/`span_id`; console output unchanged.
+
+## 5. Smoke suite results
+
+### Run 1 - `evidence/run-20260919T082103Z-0944` (08:21:03-08:22:48 UTC), all four cases PASS
+
+| Case | Requests / statuses | Stored evidence (DQL, explicit window) |
+| --- | --- | --- |
+| baseline | 3x account, balance, card status, buy, prices: all 200 | 15 spans of accountservice+manager in window; 3 (client -> server) pairs in the same trace with `span.parent_id` = accountservice CLIENT span id (`dql/baseline-trace.json`) |
+| card (`credit_card_meltdown`) | 1 activation probe (500 immediately), batch 6 -> 6x 500 | 6 unique SERVER spans `GET /v1/orders/{accountId}/status/latest` status 500, `span.status_code=error`, all carrying `http.request.header.x-lab-run-id`; 6 CLIENT spans (flag lookup, 200) correctly excluded; 6 ERROR + 12 INFO logs, every ERROR with `exception.type=java.lang.ArithmeticException` and trace context (`dql/card-*.json`) |
+| broker (`db_not_responding`) | 1 activation probe (503 immediately, flag cache 5 s), batch 6 -> 6x 503 | 6 unique SERVER spans `POST v1/trade/buy` status 503; 90 CLIENT spans (SQL/EF Core, pricing, flags) excluded; 12 ERROR logs = 2 per request (EF Core `An exception occurred in the database while saving changes...` + app `Error while saving changes: ...`), all trace-correlated; 18 INFO (`dql/broker-*.json`) |
+| recovery | first probe after restore: card 200, buy 200 | flags snapshot at end: all fault flags false |
+
+Query completeness: every result was well below the record limits (`limit 100` for raw span lists, `limit 20` for
+log samples), `metadata.scannedRecords` ~28k spans / ~10k logs per query, no sampling (`sampled: null`), so counts
+are complete for the scanned windows. Delivery delay observed: card spans became queryable ~40 s after the batch,
+broker spans ~20 s, logs < 10 s after spans.
+
+Observations worth keeping:
+* The captured header attribute is stored as an **array** on Java spans (`["run-..."]`) and as a **string** on
+  .NET spans; the suite therefore compares with `tostring|contains`.
+* `dt.auth.origin` on log records contains the *public* id prefix of the platform token (`dt0s16.XXXXXXXX`), which
+  Dynatrace attaches itself; it is not the secret part, but reviewers should know it appears in raw samples.
+* The .NET `BrokerExceptionFilter` logs the handled 503 at Information; the ERROR records come from
+  `TradeServiceBase.SaveChangesOrRollback` and from EF Core's own logger, both existing loggers, not fabricated.
+
+### Run 2 - `evidence/run-20260919T082305Z-3783` (08:23:05-08:24:54 UTC), all four cases PASS, unattended
+
+Same class of evidence as run 1: 3 linked cross-service pairs, card 6/6 x 500 -> 6 unique SERVER spans + 6 ERROR
+logs, broker 6/6 x 503 -> 6 unique SERVER spans + 12 ERROR logs, recovery on the first probe. No manual repair
+between the runs; the fixtures (deposit, existing card order -> 400 "already exists", accepted) are idempotent.
+
+### Script refinements after run 2 (08:25)
+
+* Image tag derivation moved to `scripts/lab-env.sh` and now keys on the last commit touching `src/` or
+  `compose.dev.yaml` (previously the repo HEAD, which changed when only `otel-lab/` docs were committed and left
+  `manifest.json.image_tag` empty / pointing at a tag that was never built).
+* Manifest now records the running containers with their image ids instead of the whole local image list, and
+  only `OTEL_EXPORTER_OTLP_HEADERS` is redacted (the header-capture settings had been over-redacted).
+* `logs-error-samples.dql` includes `otel.scope.name`, `exception.type`, `exception.message`.
+* Run 3 executed with the final scripts (see evidence directory `run-20260919T0825*`).
+
+## 6. Elapsed time and human interventions
+
+* 07:44 start of inspection -> 08:22 first fully passing smoke run (~40 min wall clock, of which ~15 min image
+  build and ~5 min diagnosing the .NET log gap); ~08:35 handoff written.
+* Human interventions: none during the run. The only inputs were the pre-provisioned `lab.json` and token file.
+* Host changes outside the checkout: `dtctl` in `/usr/local/bin`, `~/.config/dtctl/config` (new file, one
+  context), `~/.config/easytrade-otel-lab/otel.env` (generated), 4 GiB `/swapfile` (+ fstab entry), Docker
+  images/containers/network of project `easytrade-otel-lab`, `node:24.11.0-alpine3.22` and
+  `nginx:1.29.0-alpine3.22-slim` images pulled.
+
+## 7. Known gaps and non-standard points (candid list)
+
+* Go services (pricing-service, aggregator-service) are not instrumented. The official Go zero-code path is the
+  eBPF agent (`opentelemetry-go-instrumentation` v0.24.0), which needs a privileged sidecar sharing the target's
+  PID namespace; it was not attempted within this milestone. Broker -> pricing-service therefore shows a CLIENT
+  span without a matching SERVER span.
+* calculationservice (C++ + OneAgent SDK) has no official OTel zero-code option; the SDK stays linked but inert.
+* nginx reverse proxy and the static frontend are uninstrumented; traces start at the first instrumented service
+  (the proxy forwards but does not create `traceparent`).
+* The .NET fix is a source change in three files (provider cleanup instead of `ClearProviders()`); everything else
+  is configuration and bind-mounted agents.
+* Java scheduler traffic (card/third-party) cannot be paused without a restart; it is confined to other routes.
+* The stored `service.version` equals the image tag (git revision of `src/`), which is a lab convention.
+* Metrics are deliberately not exported (scope not requested); the empty-payload probe returned 200 on
+  `/v1/metrics`, which says nothing about the metrics ingest scope.

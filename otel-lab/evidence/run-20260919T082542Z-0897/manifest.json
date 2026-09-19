@@ -1,0 +1,337 @@
+{
+  "run_id": "run-20260919T082542Z-0897",
+  "generated_utc": "2026-09-19T08:27:46Z",
+  "lab_namespace": "easytrade-otel-lab",
+  "base_url": "http://127.0.0.1:8080",
+  "host": "ubuntu-8gb-nbg1-1 x86_64",
+  "git_commit": "93998c7dc21d0cf43b9d8198a1f6b438f7b11e81",
+  "git_branch": "codex/otel-easytrade-lab",
+  "image_tag": "65bf1f366e28",
+  "running_containers": [
+    "accountservice easytrade-otel-lab/accountservice:65bf1f366e28 sha256:deb94b0490ecfa020b1f48c7fa8e11b90e3ea9cd8f83a7befc6728c6085df2a7",
+    "aggregator-service easytrade-otel-lab/aggregator-service:65bf1f366e28 sha256:ff89034fa8dc4777d0ff3592e01296bbbb73e497890d8644804a2aa4d0870f5c",
+    "broker-service easytrade-otel-lab/broker-service:65bf1f366e28 sha256:b686db8dca23425174d41f3daf7c82e86b3e046727025079138deff3dcd8a9b8",
+    "calculationservice easytrade-otel-lab/calculationservice:65bf1f366e28 sha256:c89fbd2048a56c3421eb43504b3b4eb4c38e828da398dd20d4eb439e53aadf15",
+    "contentcreator easytrade-otel-lab/contentcreator:65bf1f366e28 sha256:3a55ef07fb31ea1c4e6ad7cc943a91beefce5180bb1a9a8d2c3b14ef93403432",
+    "credit-card-order-service easytrade-otel-lab/credit-card-order-service:65bf1f366e28 sha256:40fc73529e52b3d329560be264fdf4ac7ed62e34d8572387a15f0b0c7c169cd3",
+    "db easytrade-otel-lab/db:65bf1f366e28 sha256:76a3f3b478c5e4b253a43747512cdd719323df37f36fb1a8e2291318b6b6fb77",
+    "engine easytrade-otel-lab/engine:65bf1f366e28 sha256:3d1c06c03a155b1324ff7a7f9fd344ec4c6b96d004d1a551b7625f904c1bd028",
+    "feature-flag-service easytrade-otel-lab/feature-flag-service:65bf1f366e28 sha256:fd12a8b87bc36e9de7731e83187f11d82d322c52614be628abb008aae94a84ab",
+    "frontend easytrade-otel-lab/frontend:65bf1f366e28 sha256:06fa1759d5b903d643e3d58806216f2fbd6b41aac4f3ac9792a69e4a7cba3582",
+    "frontendreverseproxy easytrade-otel-lab/frontendreverseproxy:65bf1f366e28 sha256:815eb9a477360ee55e613c5e6f6557eb66cf09487b8a29fab5d9f919801787b4",
+    "loginservice easytrade-otel-lab/loginservice:65bf1f366e28 sha256:ef1f721134f59a2fab50e7178af42b6da7fba136d0068ad59d91f9eb39d32c7d",
+    "manager easytrade-otel-lab/manager:65bf1f366e28 sha256:14719b7b22e7f7a6a37fe46e1c2f98d93be3c9acb4214c1ee619f11bfdd64cac",
+    "offerservice easytrade-otel-lab/offerservice:65bf1f366e28 sha256:53518425effb06462ac9e19574ea91614f3e027c5bcbfb47fb3811a664a1ba7a",
+    "pricing-service easytrade-otel-lab/pricing-service:65bf1f366e28 sha256:f2b139a1b6eab653939984454ae39c9bbdb027dab28a2b7b23fb8a68a241a299",
+    "rabbitmq easytrade-otel-lab/rabbitmq:65bf1f366e28 sha256:a25289eeb28ee091b679b1a2991e9ca77375fb288f801fae6959a218181f658c",
+    "third-party-service easytrade-otel-lab/third-party-service:65bf1f366e28 sha256:65f63543910c48a58ad629a26e4796a9345889aa0ddd7115e0296b620ac0d465"
+  ],
+  "agents": "java=2.31.1 dotnet=1.16.0 node=0.80.0",
+  "dtctl": "dtctl version 0.39.0",
+  "account_id": 3,
+  "batch_size": 6,
+  "background_traffic_state": "SERVICE                     STATUS;aggregator-service          Up 5 minutes (Paused);Longrunningtransaction scheduler is currently stopped.;",
+  "flags_at_baseline": "[{\"id\":\"credit_card_validation\",\"enabled\":false},{\"id\":\"factory_crisis\",\"enabled\":false},{\"id\":\"frontend_feature_flag_management\",\"enabled\":true},{\"id\":\"credit_card_meltdown\",\"enabled\":false},{\"id\":\"high_cpu_usage\",\"enabled\":false},{\"id\":\"ergo_aggregator_slowdown\",\"enabled\":false},{\"id\":\"db_not_responding\",\"enabled\":false}]",
+  "flags_at_end": "[{\"id\":\"credit_card_validation\",\"enabled\":false},{\"id\":\"factory_crisis\",\"enabled\":false},{\"id\":\"frontend_feature_flag_management\",\"enabled\":true},{\"id\":\"credit_card_meltdown\",\"enabled\":false},{\"id\":\"high_cpu_usage\",\"enabled\":false},{\"id\":\"ergo_aggregator_slowdown\",\"enabled\":false},{\"id\":\"db_not_responding\",\"enabled\":false}]",
+  "fixture_errors": "none",
+  "effective_settings": {
+    "services": {
+      "accountservice": {
+        "image": "easytrade-otel-lab/accountservice:65bf1f366e28",
+        "environment": {
+          "JAVA_TOOL_OPTIONS": "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx256m",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS": "x-lab-run-id",
+          "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS": "x-lab-run-id,x-lab-case",
+          "OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES": "true",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "accountservice",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "aggregator-service": {
+        "image": "easytrade-otel-lab/aggregator-service:65bf1f366e28",
+        "environment": {}
+      },
+      "broker-service": {
+        "image": "easytrade-otel-lab/broker-service:65bf1f366e28",
+        "environment": {
+          "CORECLR_ENABLE_PROFILING": "1",
+          "CORECLR_PROFILER": "{918728DD-259F-4A6A-AC2B-B85E1B658318}",
+          "CORECLR_PROFILER_PATH": "/otel/dotnet/linux-musl-x64/OpenTelemetry.AutoInstrumentation.Native.so",
+          "DOTNET_EnableDiagnostics": "1",
+          "DOTNET_STARTUP_HOOKS": "/otel/dotnet/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll",
+          "FEATURE_FLAG_CACHE_DURATION_S": "5",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_DOTNET_AUTO_HOME": "/otel/dotnet",
+          "OTEL_DOTNET_AUTO_LOGS_INCLUDE_FORMATTED_MESSAGE": "true",
+          "OTEL_DOTNET_AUTO_LOG_DIRECTORY": "/tmp/otel-dotnet-auto",
+          "OTEL_DOTNET_AUTO_METRICS_ENABLED": "false",
+          "OTEL_DOTNET_AUTO_TRACES_ASPNETCORE_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS": "X-Lab-Run-Id,X-Lab-Case",
+          "OTEL_DOTNET_AUTO_TRACES_HTTP_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS": "X-Lab-Run-Id",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "broker-service",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "calculationservice": {
+        "image": "easytrade-otel-lab/calculationservice:65bf1f366e28",
+        "environment": {}
+      },
+      "contentcreator": {
+        "image": "easytrade-otel-lab/contentcreator:65bf1f366e28",
+        "environment": {
+          "JAVA_TOOL_OPTIONS": "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx256m",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS": "x-lab-run-id",
+          "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS": "x-lab-run-id,x-lab-case",
+          "OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES": "true",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "contentcreator",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "credit-card-order-service": {
+        "image": "easytrade-otel-lab/credit-card-order-service:65bf1f366e28",
+        "environment": {
+          "JAVA_TOOL_OPTIONS": "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx256m",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS": "x-lab-run-id",
+          "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS": "x-lab-run-id,x-lab-case",
+          "OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES": "true",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "credit-card-order-service",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on",
+          "WORK_DELAY": "60",
+          "WORK_RATE": "180"
+        }
+      },
+      "db": {
+        "image": "easytrade-otel-lab/db:65bf1f366e28",
+        "environment": {
+          "MSSQL_MEMORY_LIMIT_MB": "1536"
+        }
+      },
+      "engine": {
+        "image": "easytrade-otel-lab/engine:65bf1f366e28",
+        "environment": {
+          "JAVA_TOOL_OPTIONS": "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx256m",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS": "x-lab-run-id",
+          "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS": "x-lab-run-id,x-lab-case",
+          "OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES": "true",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "engine",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "feature-flag-service": {
+        "image": "easytrade-otel-lab/feature-flag-service:65bf1f366e28",
+        "environment": {
+          "JAVA_TOOL_OPTIONS": "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx256m",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS": "x-lab-run-id",
+          "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS": "x-lab-run-id,x-lab-case",
+          "OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES": "true",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "feature-flag-service",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "frontend": {
+        "image": "easytrade-otel-lab/frontend:65bf1f366e28",
+        "environment": {}
+      },
+      "frontendreverseproxy": {
+        "image": "easytrade-otel-lab/frontendreverseproxy:65bf1f366e28",
+        "environment": {}
+      },
+      "loginservice": {
+        "image": "easytrade-otel-lab/loginservice:65bf1f366e28",
+        "environment": {
+          "CORECLR_ENABLE_PROFILING": "1",
+          "CORECLR_PROFILER": "{918728DD-259F-4A6A-AC2B-B85E1B658318}",
+          "CORECLR_PROFILER_PATH": "/otel/dotnet/linux-musl-x64/OpenTelemetry.AutoInstrumentation.Native.so",
+          "DOTNET_EnableDiagnostics": "1",
+          "DOTNET_STARTUP_HOOKS": "/otel/dotnet/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_DOTNET_AUTO_HOME": "/otel/dotnet",
+          "OTEL_DOTNET_AUTO_LOGS_INCLUDE_FORMATTED_MESSAGE": "true",
+          "OTEL_DOTNET_AUTO_LOG_DIRECTORY": "/tmp/otel-dotnet-auto",
+          "OTEL_DOTNET_AUTO_METRICS_ENABLED": "false",
+          "OTEL_DOTNET_AUTO_TRACES_ASPNETCORE_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS": "X-Lab-Run-Id,X-Lab-Case",
+          "OTEL_DOTNET_AUTO_TRACES_HTTP_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS": "X-Lab-Run-Id",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "loginservice",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "manager": {
+        "image": "easytrade-otel-lab/manager:65bf1f366e28",
+        "environment": {
+          "CORECLR_ENABLE_PROFILING": "1",
+          "CORECLR_PROFILER": "{918728DD-259F-4A6A-AC2B-B85E1B658318}",
+          "CORECLR_PROFILER_PATH": "/otel/dotnet/linux-musl-x64/OpenTelemetry.AutoInstrumentation.Native.so",
+          "DOTNET_EnableDiagnostics": "1",
+          "DOTNET_STARTUP_HOOKS": "/otel/dotnet/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_DOTNET_AUTO_HOME": "/otel/dotnet",
+          "OTEL_DOTNET_AUTO_LOGS_INCLUDE_FORMATTED_MESSAGE": "true",
+          "OTEL_DOTNET_AUTO_LOG_DIRECTORY": "/tmp/otel-dotnet-auto",
+          "OTEL_DOTNET_AUTO_METRICS_ENABLED": "false",
+          "OTEL_DOTNET_AUTO_TRACES_ASPNETCORE_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS": "X-Lab-Run-Id,X-Lab-Case",
+          "OTEL_DOTNET_AUTO_TRACES_HTTP_INSTRUMENTATION_CAPTURE_REQUEST_HEADERS": "X-Lab-Run-Id",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "manager",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "offerservice": {
+        "image": "easytrade-otel-lab/offerservice:65bf1f366e28",
+        "environment": {
+          "NODE_OPTIONS": "--require @opentelemetry/auto-instrumentations-node/register",
+          "NODE_PATH": "/otel/node/node_modules",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_NODE_DISABLED_INSTRUMENTATIONS": "fs,dns,net",
+          "OTEL_NODE_RESOURCE_DETECTORS": "env,host,os,process",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "offerservice",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      },
+      "pricing-service": {
+        "image": "easytrade-otel-lab/pricing-service:65bf1f366e28",
+        "environment": {}
+      },
+      "rabbitmq": {
+        "image": "easytrade-otel-lab/rabbitmq:65bf1f366e28",
+        "environment": {}
+      },
+      "third-party-service": {
+        "image": "easytrade-otel-lab/third-party-service:65bf1f366e28",
+        "environment": {
+          "COURIER_DELAY": "60",
+          "COURIER_RATE": "180",
+          "JAVA_TOOL_OPTIONS": "-javaagent:/otel/java/opentelemetry-javaagent.jar -XX:-OmitStackTraceInFastThrow -Xmx256m",
+          "MANUFACTURE_DELAY": "60",
+          "MANUFACTURE_RATE": "180",
+          "OTEL_BLRP_SCHEDULE_DELAY": "2000",
+          "OTEL_BSP_SCHEDULE_DELAY": "2000",
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "https://ybe54905.live.dynatrace.com/api/v2/otlp",
+          "OTEL_EXPORTER_OTLP_HEADERS": "<redacted: Authorization=Bearer ...>",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "OTEL_EXPORTER_OTLP_TIMEOUT": "10000",
+          "OTEL_INSTRUMENTATION_HTTP_CLIENT_CAPTURE_REQUEST_HEADERS": "x-lab-run-id",
+          "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS": "x-lab-run-id,x-lab-case",
+          "OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_LOG_ATTRIBUTES": "true",
+          "OTEL_LOGS_EXPORTER": "otlp",
+          "OTEL_METRICS_EXPORTER": "none",
+          "OTEL_PROPAGATORS": "tracecontext,baggage",
+          "OTEL_RESOURCE_ATTRIBUTES": "service.namespace=easytrade-otel-lab,deployment.environment.name=easytrade-otel-lab,service.version=65bf1f366e28",
+          "OTEL_SERVICE_NAME": "third-party-service",
+          "OTEL_TRACES_EXPORTER": "otlp",
+          "OTEL_TRACES_SAMPLER": "always_on"
+        }
+      }
+    }
+  },
+  "cases": {
+    "baseline": {
+      "result": "PASS",
+      "note": "statuses=acct:200 acct:200 acct:200 balance:200 card:200 buy:200 prices:200 linked_pairs=3"
+    },
+    "card": {
+      "result": "PASS",
+      "note": "activated=1 probes=1 sent=6 returned_500=6 statuses=500 500 500 500 500 500 unique_5xx_server_spans=6 spans_with_run_id=6 error_logs=6 window=2026-09-19T08:26:09.410Z..2026-09-19T08:26:13.634Z"
+    },
+    "broker": {
+      "result": "PASS",
+      "note": "activated=1 probes=1 sent=6 returned_503=6 statuses=503 503 503 503 503 503 unique_5xx_server_spans=6 spans_with_run_id=6 error_logs=12 window=2026-09-19T08:26:57.691Z..2026-09-19T08:27:01.889Z"
+    },
+    "recovery": {
+      "result": "PASS",
+      "note": "probes=1 card=200 buy=200 window=2026-09-19T08:27:45.190Z..2026-09-19T08:27:48.269Z"
+    }
+  }
+}

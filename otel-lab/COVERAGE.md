@@ -30,6 +30,8 @@ pair (`service.namespace`, `service.name`); Dynatrace additionally derives one `
 | loadgen | Node.js + Puppeteer (headless Chrome) | none (intentional) | **Not instrumented** - load driver, Compose profile `load`, off by default | - | - | (none) | - | its traffic shows up as server spans on the services it hits |
 | problem-operator | Go, Kubernetes operator | n/a | not deployed (Kubernetes-only, not in Compose) | - | - | - | - | out of scope |
 
+Reference evidence: `evidence/run-20260919T082103Z-0944`, `run-20260919T082305Z-3783`, `run-20260919T082542Z-0897` (all cases PASS).
+
 Summary: 10 of 18 deployed Compose services are instrumented with official zero-code packages (6 Java, 3 .NET,
 1 Node) for traces and logs; 2 Go services are an explicit gap; 1 C++ service has no official option; 4 are
 infrastructure/static; loadgen is intentionally uninstrumented. The milestone services

@@ -6,12 +6,13 @@
 set -uo pipefail
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_DIR="$(cd "$LAB_DIR/.." && pwd)"
+# shellcheck source=lab-env.sh
+source "$LAB_DIR/scripts/lab-env.sh"
 LAB="$LAB_DIR/scripts/lab.sh"
 DT="$LAB_DIR/scripts/dtctl-lab.sh"
 Q="$LAB_DIR/queries"
-BASE="${LAB_BASE_URL:-http://127.0.0.1:${LAB_HTTP_PORT:-8080}}"
-NS="${LAB_NAMESPACE:-easytrade-otel-lab}"
+BASE="$LAB_BASE_URL"
+NS="$LAB_NAMESPACE"
 BATCH="${LAB_SMOKE_BATCH:-6}"
 USERNAME="${LAB_SMOKE_USER:-demouser}"
 INSTRUMENT_ID="${LAB_SMOKE_INSTRUMENT:-1}"
@@ -214,10 +215,11 @@ if [ "$rec_ok" = 1 ]; then RESULT[recovery]=PASS; else RESULT[recovery]=FAIL; FA
 NOTE[recovery]="probes=$rprobes card=$card buy=$buy window=$R_START..$R_END"
 
 # ------------------------------------------------------------------ manifest
-IMAGES="$(docker images --format '{{.Repository}}:{{.Tag}} {{.ID}} {{.Digest}}' | grep '^easytrade-otel-lab/' | sort | jq -R -s 'split("\n") | map(select(length>0))')"
-EFFECTIVE_ENV="$("$LAB" compose config --format json 2>/dev/null | jq '{services: (.services | with_entries({key: .key, value: {image: .value.image, environment: ((.value.environment // {}) | with_entries(select(.key|test("^OTEL_|^JAVA_TOOL|^CORECLR|^DOTNET_|^NODE_OPTIONS|^FEATURE_FLAG_CACHE|^WORK_|^COURIER_|^MANUFACTURE_|^MSSQL_MEMORY"))) | with_entries(if (.key|test("HEADERS")) then .value = "<redacted>" else . end))}}))}')"
+# running containers with the exact image id they run (source <-> image relationship)
+IMAGES="$(docker ps --filter "label=com.docker.compose.project=$LAB_PROJECT" --format '{{.Label "com.docker.compose.service"}} {{.Image}} {{.ID}}' | while read -r svc img cid; do echo "$svc $img $(docker inspect --format '{{.Image}}' "$cid")"; done | sort | jq -R -s 'split("\n") | map(select(length>0))')"
+EFFECTIVE_ENV="$("$LAB" compose config --format json 2>/dev/null | jq '{services: (.services | with_entries({key: .key, value: {image: .value.image, environment: ((.value.environment // {}) | with_entries(select(.key|test("^OTEL_|^JAVA_TOOL|^CORECLR|^DOTNET_|^NODE_|^FEATURE_FLAG_CACHE|^WORK_|^COURIER_|^MANUFACTURE_|^MSSQL_MEMORY"))) | with_entries(if (.key|test("OTLP_HEADERS")) then .value = "<redacted: Authorization=Bearer ...>" else . end))}}))}')"
 jq -n --arg run "$RUN_ID" --arg ns "$NS" --arg base "$BASE" --arg acct "$ACCOUNT_ID" --arg batch "$BATCH" \
-  --arg git "$(git -C "$REPO_DIR" rev-parse HEAD)" --arg branch "$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD)" --arg tag "${LAB_IMAGE_TAG:-}" \
+  --arg git "$(git -C "$REPO_DIR" rev-parse HEAD)" --arg branch "$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD)" --arg tag "$LAB_IMAGE_TAG" \
   --arg dtctl "$(dtctl version 2>/dev/null | head -1)" --arg host "$(hostname) $(uname -m)" \
   --argjson images "$IMAGES" --argjson env "$EFFECTIVE_ENV" \
   --arg flags_baseline "$FLAGS_BASELINE" --arg flags_end "$FLAGS_END" --arg background "$BACKGROUND_STATE" \
@@ -225,7 +227,7 @@ jq -n --arg run "$RUN_ID" --arg ns "$NS" --arg base "$BASE" --arg acct "$ACCOUNT
   --arg r_k "${RESULT[broker]}" --arg n_k "${NOTE[broker]}" --arg r_r "${RESULT[recovery]}" --arg n_r "${NOTE[recovery]}" \
   --arg fixtures "${FIXTURE_ERRORS[*]:-none}" --arg agents "java=$(cat "$LAB_DIR/agents/java/VERSION" 2>/dev/null) dotnet=$(cat "$LAB_DIR/agents/dotnet/VERSION" 2>/dev/null) node=$(jq -r '.dependencies["@opentelemetry/auto-instrumentations-node"]' "$LAB_DIR/agents/node/package.json")" \
   '{run_id:$run, generated_utc: (now|todate), lab_namespace:$ns, base_url:$base, host:$host, git_commit:$git, git_branch:$branch, image_tag:$tag,
-    images:$images, agents:$agents, dtctl:$dtctl, account_id:($acct|tonumber), batch_size:($batch|tonumber),
+    running_containers:$images, agents:$agents, dtctl:$dtctl, account_id:($acct|tonumber), batch_size:($batch|tonumber),
     background_traffic_state:$background, flags_at_baseline:$flags_baseline, flags_at_end:$flags_end, fixture_errors:$fixtures,
     effective_settings:$env,
     cases:{baseline:{result:$r_b, note:$n_b}, card:{result:$r_c, note:$n_c}, broker:{result:$r_k, note:$n_k}, recovery:{result:$r_r, note:$n_r}}}' > "$EV/manifest.json"

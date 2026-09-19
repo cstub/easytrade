@@ -1,0 +1,7 @@
+CONTENT             DEPLOYMENT ENVIRONMENT NAME   LOG SOURCE   LOGLEVEL   SERVICE NAME                SERVICE NAMESPACE    SPAN ID            STATUS   TIMESTAMP                        TRACE ID                           
+Exception occured   easytrade-otel-lab                         ERROR      credit-card-order-service   easytrade-otel-lab   4ae7c3b7966dc95f   ERROR    2026-09-19T08:23:33.432000000Z   d75f4a210dadf24751be9ad0c6b19178   
+Exception occured   easytrade-otel-lab                         ERROR      credit-card-order-service   easytrade-otel-lab   e561715ae9411a97   ERROR    2026-09-19T08:23:33.466000000Z   dfcd1b41206cc2894dd6638e9b885a3d   
+Exception occured   easytrade-otel-lab                         ERROR      credit-card-order-service   easytrade-otel-lab   3f70d26976fd27f1   ERROR    2026-09-19T08:23:33.500000000Z   c7afcbfb75f58f46a6ce9b2f724f4ed1   
+Exception occured   easytrade-otel-lab                         ERROR      credit-card-order-service   easytrade-otel-lab   4e0ea2fa65f999f0   ERROR    2026-09-19T08:23:33.535000000Z   3b42e48dc2c097630a9f952b15ec0f4e   
+Exception occured   easytrade-otel-lab                         ERROR      credit-card-order-service   easytrade-otel-lab   fca272fc11c0e958   ERROR    2026-09-19T08:23:33.567000000Z   77c5db6138a8c71a74c1f5e5a6e98349   
+Exception occured   easytrade-otel-lab                         ERROR      credit-card-order-service   easytrade-otel-lab   e6ce228ca4fda3c9   ERROR    2026-09-19T08:23:33.602000000Z   80459a3c4405a5882354100405ceaa17   

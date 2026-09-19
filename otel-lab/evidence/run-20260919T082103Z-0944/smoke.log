@@ -5,3 +5,30 @@ READY: all probes OK at http://127.0.0.1:8080
 paused aggregator-service
 Longrunningtransaction scheduler stopped.
 2026-09-19T08:21:04Z == case baseline
+2026-09-19T08:21:06Z   baseline statuses: acct:200 acct:200 acct:200 balance:200 card:200 buy:200 prices:200  window 2026-09-19T08:21:03.776Z .. 2026-09-19T08:21:08.285Z
+2026-09-19T08:21:26Z   waiting (<= 300s) for stored telemetry: baseline-trace --for=count-gte=2
+2026-09-19T08:21:31Z     wait rc=0 
+2026-09-19T08:21:31Z   cross-service linked pairs (accountservice client -> manager server, same trace, parent match): 3
+2026-09-19T08:21:31Z == case card (flag credit_card_meltdown, expect HTTP 500)
+2026-09-19T08:21:31Z   activation probes: 1 (activated=1, flag now true)
+2026-09-19T08:21:33Z   batch: sent=6 statuses=500 500 500 500 500 500 window 2026-09-19T08:21:31.610Z .. 2026-09-19T08:21:35.851Z
+2026-09-19T08:21:33Z   waiting (<= 300s) for stored telemetry: card-spans --for=count-gt=3
+2026-09-19T08:22:14Z     wait rc=0 
+2026-09-19T08:22:14Z   waiting (<= 300s) for stored telemetry: card-logs --for=count-gte=1
+2026-09-19T08:22:19Z     wait rc=0 
+2026-09-19T08:22:20Z   stored: unique 5xx server spans=6 (with run id=6), ERROR logs=6 (samples saved: 6)
+2026-09-19T08:22:20Z   flag credit_card_meltdown restored -> false
+2026-09-19T08:22:20Z == case broker (flag db_not_responding, expect HTTP 503)
+2026-09-19T08:22:20Z   activation probes: 1 (activated=1, flag now true)
+2026-09-19T08:22:22Z   batch: sent=6 statuses=503 503 503 503 503 503 window 2026-09-19T08:22:20.135Z .. 2026-09-19T08:22:24.342Z
+2026-09-19T08:22:22Z   waiting (<= 300s) for stored telemetry: broker-spans --for=count-gt=3
+2026-09-19T08:22:42Z     wait rc=0 
+2026-09-19T08:22:42Z   waiting (<= 300s) for stored telemetry: broker-logs --for=count-gte=1
+2026-09-19T08:22:48Z     wait rc=0 
+2026-09-19T08:22:48Z   stored: unique 5xx server spans=6 (with run id=6), ERROR logs=12 (samples saved: 12)
+2026-09-19T08:22:48Z   flag db_not_responding restored -> false
+2026-09-19T08:22:48Z == case recovery
+2026-09-19T08:22:48Z   recovery: ok=1 probes=1 card=200 buy=200 flags=[{"id":"credit_card_validation","enabled":false},{"id":"factory_crisis","enabled":false},{"id":"frontend_feature_flag_management","enabled":true},{"id":"credit_card_meltdown","enabled":false},{"id":"high_cpu_usage","enabled":false},{"id":"ergo_aggregator_slowdown","enabled":false},{"id":"db_not_responding","enabled":false}]
+2026-09-19T08:22:48Z == RESULT baseline=PASS card=PASS broker=PASS recovery=PASS  (evidence: /root/workspace/easytrade/otel-lab/evidence/run-20260919T082103Z-0944)
+2026-09-19T08:22:48Z cleanup: restoring fault flags
+2026-09-19T08:22:48Z cleanup: card=200 buy=200 flags=[{"id":"credit_card_validation","enabled":false},{"id":"factory_crisis","enabled":false},{"id":"frontend_feature_flag_management","enabled":true},{"id":"credit_card_meltdown","enabled":false},{"id":"high_cpu_usage","enabled":false},{"id":"ergo_aggregator_slowdown","enabled":false},{"id":"db_not_responding","enabled":false}]

@@ -28,6 +28,7 @@ Companion documents: [COVERAGE.md](COVERAGE.md) (per-service instrumentation mat
 | `versions.env` | Pinned instrumentation / tool versions and SHA-256 checksums |
 | `agents/` | Downloaded official agents (git-ignored; `agents/node/package*.json` pin the Node packages) |
 | `scripts/lab.sh` | Lab control: agents, env, build, up, ready, status, flags, background traffic, down |
+| `scripts/lab-env.sh` | Shared settings (project name, port, namespace, image tag = last commit touching `src/`) |
 | `scripts/smoke.sh` | The fault-and-recovery smoke suite (one command) |
 | `scripts/dtctl-lab.sh` / `scripts/query.sh` | dtctl in the lab's read-only context; replay a saved DQL template |
 | `queries/*.dql` | DQL templates used for verification (`{{ .var }}` placeholders, `--set var=value`) |
@@ -84,9 +85,17 @@ stores **> 3 unique SERVER spans with HTTP status 500-599** of that service in t
 ERROR log record of that service. Flags are restored on any exit (trap) and recovery is re-verified.
 Tunables: `LAB_SMOKE_BATCH` (6), `LAB_SMOKE_USER` (demouser), `LAB_SMOKE_WAIT` (300s per stored-telemetry wait).
 
-Evidence lands in `otel-lab/evidence/<run-id>/`: `manifest.json` (windows, revision, images, effective non-secret
-settings, per-case results), `requests.jsonl` (every request with status), `dql/*.dql|*.vars|*.json`
-(resolved query + raw result with `metadata` including `analysisTimeframe`, `scannedRecords`, `scannedBytes`).
+Evidence lands in `otel-lab/evidence/<run-id>/`: `manifest.json` (windows, revision, running container image ids,
+effective non-secret settings, per-case results), `requests.jsonl` (every request with status), `smoke.log`,
+`dql/<name>.dql|.vars|.json|.wait.json` (template, variables, raw result with `metadata` including
+`analysisTimeframe`, `scannedRecords`, `scannedBytes`, and the bounded-polling result).
+Reference runs: `run-20260919T082103Z-0944`, `run-20260919T082305Z-3783`, `run-20260919T082542Z-0897` (all PASS).
+
+Field notes for replaying queries: spans use `service.name`, `service.namespace`, `span.kind` (`server`/`client`),
+`http.response.status_code`, `http.route`, `trace.id`, `span.id`, `span.parent_id`, `start_time`; logs use
+`service.name`, `service.namespace`, `loglevel`, `content`, `trace_id`, `span_id`, `otel.scope.name`,
+`exception.*`. The captured `X-Lab-Run-Id` header is `http.request.header.x-lab-run-id` (array on Java spans,
+string on .NET spans).
 
 ## Query telemetry manually
 
