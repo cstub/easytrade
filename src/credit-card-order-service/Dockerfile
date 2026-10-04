@@ -21,7 +21,7 @@ ENV DT_LIVEDEBUGGER_REMOTE_ORIGIN=$GIT_ORIGIN
 # OpenTelemetry Java agent, loaded by CMD below and configured through OTEL_* environment variables.
 ADD --checksum=sha256:bbf83c151b6400709e2f225bdd07a04f839d9d13b8b93464241333fd25d3e3ba --chmod=644 \
     https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.31.1/opentelemetry-javaagent.jar \
-    /opt/opentelemetry/opentelemetry-javaagent.jar
+    /opt/opentelemetry-javaagent.jar
 
 RUN addgroup --system --gid 3369 easytrade \
     && adduser --system --ingroup easytrade --uid 3369 easytrade
@@ -30,4 +30,4 @@ WORKDIR /home/easytrade
 
 COPY --from=build --chown=easytrade:easytrade ["/app/build/libs/*.jar", "app.jar"]
 
-CMD ["java", "-javaagent:/opt/opentelemetry/opentelemetry-javaagent.jar", "-jar", "app.jar"]
+CMD ["java", "-javaagent:/opt/opentelemetry-javaagent.jar", "-jar", "app.jar"]
