@@ -24,6 +24,7 @@ env:
 
 jobs:
   calc-version:
+    if: github.repository == 'Dynatrace/easytrade' # upstream registry and secrets; skipped in forks
     uses: ./.github/workflows/reusable-calc-version.yaml
 
   deploy-easytrade:
