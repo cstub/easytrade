@@ -52,7 +52,8 @@ namespace easyTradeLoginService
             }));
 
             services.AddLogging(logOptions => {
-                logOptions.ClearProviders();
+                // No ClearProviders(): it would also remove the OpenTelemetry logger provider
+                // that the automatic instrumentation registers.
                 logOptions.AddSimpleConsole(consoleOptions => {
                     consoleOptions.TimestampFormat = "dd/MM/yy HH:mm:ss ";
                 });
