@@ -21,16 +21,16 @@ import (
 // @Success		200	{object}	price.pricesResult
 // @Router			/v1/prices/latest [get]
 func GetCurrentPrices(ctx *gin.Context) {
-	log.Info("Getting current prices")
+	log.WithContext(ctx.Request.Context()).Info("Getting current prices")
 
 	var priceList []price
 
-	services.DB.Where("Timestamp = (?)", services.DB.Table("Pricing").Select("max(Timestamp)")).Find(&priceList)
+	services.DB.WithContext(ctx.Request.Context()).Where("Timestamp = (?)", services.DB.Table("Pricing").Select("max(Timestamp)")).Find(&priceList)
 
 	negotiateResponse(ctx, http.StatusOK, &pricesResult{
 		Results: priceList,
 	})
-	services.SendDataToRabbitQueue(prepareCSV(priceList, utils.RandomIntProvider{}))
+	services.SendDataToRabbitQueue(ctx.Request.Context(), prepareCSV(priceList, utils.RandomIntProvider{}))
 }
 
 // @Summary		Get instrument price
@@ -42,14 +42,14 @@ func GetCurrentPrices(ctx *gin.Context) {
 // @Success		200	{object}	price.price
 // @Router			/v1/prices/last [get]
 func GetLastPrice(ctx *gin.Context) {
-	log.Info("Getting last price")
+	log.WithContext(ctx.Request.Context()).Info("Getting last price")
 
 	var lastPrice price
 
-	services.DB.Last(&lastPrice)
+	services.DB.WithContext(ctx.Request.Context()).Last(&lastPrice)
 
 	negotiateResponse(ctx, http.StatusOK, &lastPrice)
-	services.SendDataToRabbitQueue(prepareCSV([]price{lastPrice}, utils.RandomIntProvider{}))
+	services.SendDataToRabbitQueue(ctx.Request.Context(), prepareCSV([]price{lastPrice}, utils.RandomIntProvider{}))
 }
 
 // @Summary		Get prices of a particular instrument
@@ -66,19 +66,19 @@ func GetPricingDataForInstrument(ctx *gin.Context) {
 	instrumentId := ctx.Param("instrumentId")
 	records, _ := strconv.Atoi(ctx.DefaultQuery("records", "100"))
 
-	log.WithFields(log.Fields{
+	log.WithContext(ctx.Request.Context()).WithFields(log.Fields{
 		"instrumentId": instrumentId,
 		"records":      records,
 	}).Info("Getting pricing data for instrument")
 
 	var priceList []price
 
-	services.DB.Table("Pricing").Where("instrumentId = ?", instrumentId).Order("Timestamp desc").Limit(records).Scan(&priceList)
+	services.DB.WithContext(ctx.Request.Context()).Table("Pricing").Where("instrumentId = ?", instrumentId).Order("Timestamp desc").Limit(records).Scan(&priceList)
 
 	negotiateResponse(ctx, http.StatusOK, &pricesResult{
 		Results: priceList,
 	})
-	services.SendDataToRabbitQueue(prepareCSV(priceList, utils.RandomIntProvider{}))
+	services.SendDataToRabbitQueue(ctx.Request.Context(), prepareCSV(priceList, utils.RandomIntProvider{}))
 }
 
 func prepareCSV(priceList []price, provider utils.IntProvider) string {

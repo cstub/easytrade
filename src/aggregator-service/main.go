@@ -1,9 +1,15 @@
 package main
 
 import (
+	"context"
 	"errors"
+	stdlog "log"
 	"math/rand/v2"
+	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"dynatrace.com/easytrade/aggregator-service/clock"
@@ -13,11 +19,24 @@ import (
 	"dynatrace.com/easytrade/aggregator-service/offer"
 	"dynatrace.com/easytrade/aggregator-service/platform"
 	"dynatrace.com/easytrade/aggregator-service/signup"
+	"dynatrace.com/easytrade/aggregator-service/telemetry"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
+
+const serviceName = "aggregator-service"
 
 const xmlProbability = 0.5
 
 func main() {
+	// Telemetry first: the logger built below bridges into the OpenTelemetry logger provider.
+	shutdownTelemetry, err := telemetry.Setup(context.Background(), serviceName)
+	if err != nil {
+		stdlog.Fatalf("Failed to set up OpenTelemetry: %v", err)
+	}
+	go flushTelemetryOnSignal(shutdownTelemetry)
+	// Client spans and W3C trace context on every request to offerservice.
+	http.DefaultClient.Transport = otelhttp.NewTransport(http.DefaultTransport)
+
 	l := logger.GetSugar()
 	defer l.Sync()
 
@@ -43,6 +62,20 @@ func main() {
 	}
 
 	wg.Wait()
+}
+
+// flushTelemetryOnSignal exports the buffered telemetry when the pod is stopped.
+func flushTelemetryOnSignal(shutdown func(context.Context) error) {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	<-ctx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := shutdown(shutdownCtx); err != nil {
+		stdlog.Print(err)
+	}
+	os.Exit(0)
 }
 
 func checkOffersTick(p *platform.Platform) {

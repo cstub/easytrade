@@ -12,7 +12,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func SendDataToRabbitQueue(msgBody string) {
+func SendDataToRabbitQueue(ctx context.Context, msgBody string) {
+	queueName := os.Getenv(utils.RabbitmqQueueName)
+	headers := amqp.Table{}
+	ctx, span := startPublishSpan(ctx, queueName, headers)
+	defer span.End()
+
 	connection := createConnection()
 	defer connection.Close()
 
@@ -20,14 +25,14 @@ func SendDataToRabbitQueue(msgBody string) {
 	failOnError(err, "Failed to open a channel")
 	defer channel.Close()
 
-	queue := createQueue(channel, os.Getenv(utils.RabbitmqQueueName))
+	queue := createQueue(channel, queueName)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	publishCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	sendMessage(msgBody, channel, ctx, queue.Name)
+	sendMessage(msgBody, headers, channel, publishCtx, queue.Name)
 
-	log.Info("Data pushed to RabbitMQ queue.")
+	log.WithContext(ctx).Info("Data pushed to RabbitMQ queue.")
 }
 
 func createConnection() *amqp.Connection {
@@ -56,7 +61,7 @@ func createQueue(channel *amqp.Channel, queueName string) amqp.Queue {
 	return queue
 }
 
-func sendMessage(msgBody string, channel *amqp.Channel, ctx context.Context, queueName string) {
+func sendMessage(msgBody string, headers amqp.Table, channel *amqp.Channel, ctx context.Context, queueName string) {
 	err := channel.PublishWithContext(
 		ctx,
 		"",        // exchange
@@ -65,6 +70,7 @@ func sendMessage(msgBody string, channel *amqp.Channel, ctx context.Context, que
 		false,     // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
+			Headers:     headers,
 			Body:        []byte(msgBody),
 		},
 	)
