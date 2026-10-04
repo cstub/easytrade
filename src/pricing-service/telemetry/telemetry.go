@@ -44,7 +44,9 @@ func Setup(ctx context.Context, defaultServiceName string) (func(context.Context
 		resource.WithFromEnv(),
 	)
 	if err != nil {
-		return nil, err
+		// res still holds every attribute that could be read. A malformed
+		// OTEL_RESOURCE_ATTRIBUTES must not keep the service from starting.
+		otel.Handle(err)
 	}
 
 	var shutdowns []func(context.Context) error

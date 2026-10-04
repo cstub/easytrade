@@ -27,7 +27,9 @@ func SendDataToRabbitQueue(ctx context.Context, msgBody string) {
 
 	queue := createQueue(channel, queueName)
 
-	publishCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// The publish keeps the request's trace but not its cancellation: a client
+	// that hangs up must not lose the message.
+	publishCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 
 	sendMessage(msgBody, headers, channel, publishCtx, queue.Name)

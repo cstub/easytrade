@@ -30,7 +30,9 @@ func init() {
 	var err error
 	shutdownTelemetry, err = telemetry.Setup(context.Background(), serviceName)
 	if err != nil {
-		log.Fatalf("Failed to set up OpenTelemetry: %v", err)
+		// Run without telemetry rather than not at all.
+		log.Errorf("Failed to set up OpenTelemetry, continuing without it: %v", err)
+		shutdownTelemetry = func(context.Context) error { return nil }
 	}
 	log.AddHook(otellogrus.NewHook(serviceName))
 

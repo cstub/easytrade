@@ -31,7 +31,9 @@ func main() {
 	// Telemetry first: the logger built below bridges into the OpenTelemetry logger provider.
 	shutdownTelemetry, err := telemetry.Setup(context.Background(), serviceName)
 	if err != nil {
-		stdlog.Fatalf("Failed to set up OpenTelemetry: %v", err)
+		// Run without telemetry rather than not at all.
+		stdlog.Printf("Failed to set up OpenTelemetry, continuing without it: %v", err)
+		shutdownTelemetry = func(context.Context) error { return nil }
 	}
 	go flushTelemetryOnSignal(shutdownTelemetry)
 	// Client spans and W3C trace context on every request to offerservice.

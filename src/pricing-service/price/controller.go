@@ -1,6 +1,7 @@
 package price
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ func GetCurrentPrices(ctx *gin.Context) {
 
 	var priceList []price
 
-	services.DB.WithContext(ctx.Request.Context()).Where("Timestamp = (?)", services.DB.Table("Pricing").Select("max(Timestamp)")).Find(&priceList)
+	services.DB.WithContext(queryContext(ctx)).Where("Timestamp = (?)", services.DB.Table("Pricing").Select("max(Timestamp)")).Find(&priceList)
 
 	negotiateResponse(ctx, http.StatusOK, &pricesResult{
 		Results: priceList,
@@ -46,7 +47,7 @@ func GetLastPrice(ctx *gin.Context) {
 
 	var lastPrice price
 
-	services.DB.WithContext(ctx.Request.Context()).Last(&lastPrice)
+	services.DB.WithContext(queryContext(ctx)).Last(&lastPrice)
 
 	negotiateResponse(ctx, http.StatusOK, &lastPrice)
 	services.SendDataToRabbitQueue(ctx.Request.Context(), prepareCSV([]price{lastPrice}, utils.RandomIntProvider{}))
@@ -73,7 +74,7 @@ func GetPricingDataForInstrument(ctx *gin.Context) {
 
 	var priceList []price
 
-	services.DB.WithContext(ctx.Request.Context()).Table("Pricing").Where("instrumentId = ?", instrumentId).Order("Timestamp desc").Limit(records).Scan(&priceList)
+	services.DB.WithContext(queryContext(ctx)).Table("Pricing").Where("instrumentId = ?", instrumentId).Order("Timestamp desc").Limit(records).Scan(&priceList)
 
 	negotiateResponse(ctx, http.StatusOK, &pricesResult{
 		Results: priceList,
@@ -90,6 +91,13 @@ func prepareCSV(priceList []price, provider utils.IntProvider) string {
 	}
 
 	return stringBuilder.String()
+}
+
+// queryContext carries the request's trace into a query without the request's
+// cancellation: a client that hangs up must not empty the result that is then
+// published to RabbitMQ.
+func queryContext(ctx *gin.Context) context.Context {
+	return context.WithoutCancel(ctx.Request.Context())
 }
 
 func negotiateResponse(ctx *gin.Context, status int, data any) {
