@@ -87,6 +87,14 @@ service:
   #     protocol: TCP
   #     name: https
 
+# OpenTelemetry settings for a component whose image carries an agent or SDK.
+# When enabled, the pod gets OTEL_SERVICE_NAME (the component name), OTEL_RESOURCE_ATTRIBUTES
+# and the exporter settings derived from global.otel.
+otel:
+  enabled: false
+  # OTLP protocol of this component: http/protobuf, or grpc for nginx's module.
+  protocol: http/protobuf
+
 # This block is for setting up environment variables more information can be found here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 env: {}
 # env:

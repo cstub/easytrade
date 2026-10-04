@@ -63,3 +63,47 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+OpenTelemetry environment for components with otel.enabled. Placed before the component's own
+env, so a component can still override a variable.
+- OTEL_SERVICE_NAME: the component name, without the release prefix.
+- OTEL_RESOURCE_ATTRIBUTES: service.namespace, service.version (the image tag),
+  deployment.environment.name and any global.otel.resourceAttributes.
+- Exporter: global.otel.endpoint for OTLP/HTTP; for grpc components global.otel.grpcEndpoint,
+  or else the endpoint's host with port 4317. Without an endpoint, all exporters are set to none.
+*/}}
+{{- define "app.otelEnv" -}}
+{{- if .Values.otel.enabled }}
+{{- $otel := .Values.global.otel | default dict }}
+{{- $tag := .Values.image.tag | default .Values.global.image.tag | toString }}
+{{- $attributes := list }}
+{{- with $otel.serviceNamespace }}{{ $attributes = append $attributes (printf "service.namespace=%s" .) }}{{ end }}
+{{- $attributes = append $attributes (printf "service.version=%s" $tag) }}
+{{- with $otel.deploymentEnvironment }}{{ $attributes = append $attributes (printf "deployment.environment.name=%s" .) }}{{ end }}
+{{- range $key, $value := $otel.resourceAttributes }}{{ $attributes = append $attributes (printf "%s=%s" $key ($value | toString)) }}{{ end }}
+- name: OTEL_SERVICE_NAME
+  value: {{ include "app.name" . | quote }}
+- name: OTEL_RESOURCE_ATTRIBUTES
+  value: {{ join "," $attributes | quote }}
+{{- if $otel.endpoint }}
+{{- $endpoint := $otel.endpoint }}
+{{- if eq .Values.otel.protocol "grpc" }}
+{{- $endpoint = $otel.grpcEndpoint | default (printf "%s:4317" (regexReplaceAll ":[0-9]+$" (urlParse $otel.endpoint).host "")) }}
+{{- end }}
+- name: OTEL_EXPORTER_OTLP_ENDPOINT
+  value: {{ $endpoint | quote }}
+- name: OTEL_EXPORTER_OTLP_PROTOCOL
+  value: {{ .Values.otel.protocol | quote }}
+- name: OTEL_TRACES_SAMPLER
+  value: "parentbased_always_on"
+{{- else }}
+- name: OTEL_TRACES_EXPORTER
+  value: "none"
+- name: OTEL_METRICS_EXPORTER
+  value: "none"
+- name: OTEL_LOGS_EXPORTER
+  value: "none"
+{{- end }}
+{{- end }}
+{{- end }}

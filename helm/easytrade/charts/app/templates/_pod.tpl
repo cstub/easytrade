@@ -55,6 +55,7 @@ spec:
           value: {{ tpl ($value | toString) $ | quote }}
         {{- end }}
       {{- end }}
+      {{- include "app.otelEnv" . | nindent 8 }}
       {{- with .Values.env }}
         {{- range $key, $value := . }}
         - name: {{ $key }}
