@@ -1,0 +1,240 @@
+# easytrade with a local OpenTelemetry Collector that writes everything it receives
+# to ./out. Used by run.sh; the OTEL_* settings mirror what the Helm chart sets.
+#
+# Images: ${REGISTRY}/<component>:${TAG}. Defaults build locally (docker compose build);
+# set REGISTRY=ghcr.io/<owner>/easytrade and TAG=<short SHA> to check pushed images.
+# Memory limits follow the chart's limits, so the agents are checked within them.
+
+x-service: &service
+  restart: unless-stopped
+
+x-otel: &otel
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=easytrade,service.version=${TAG:-dev},deployment.environment.name=telemetry-check
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4318
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_TRACES_SAMPLER: parentbased_always_on
+  # Shorter than the 60 s default so metrics show up within the check.
+  OTEL_METRIC_EXPORT_INTERVAL: "10000"
+
+x-feature-flag-service: &feature-flag-service-env
+  FEATURE_FLAG_SERVICE_PROTOCOL: http
+  FEATURE_FLAG_SERVICE_BASE_URL: feature-flag-service
+  FEATURE_FLAG_SERVICE_PORT: "8080"
+
+x-connection-strings:
+  JAVA_CONNECTION_STRING: &java-connection-string jdbc:sqlserver://db:1433;database=TradeManagement;user=sa;password=yourStrong(!)Password;encrypt=false;trustServerCertificate=false;loginTimeout=30;
+  DOTNET_CONNECTION_STRING: &dotnet-connection-string Data Source=db;Initial Catalog=TradeManagement;Persist Security Info=True;User ID=sa;Password=yourStrong(!)Password;TrustServerCertificate=true
+  GO_CONNECTION_STRING: &go-connection-string sqlserver://sa:yourStrong(!)Password@db:1433?database=TradeManagement&connection+encrypt=false&connection+TrustServerCertificate=false&connection+loginTimeout=30
+
+x-rabbit-vars: &rabbit-vars
+  RABBITMQ_USER: userxxx
+  RABBITMQ_PASSWORD: passxxx
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_QUEUE: Trade_Data_Raw
+
+services:
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.159.0@sha256:1f2c54a30e713fac6b3ae77a1ec84010c2007e29ced8ec666214fc2f6739c1cc
+    command: ["--config=/etc/otelcol/collector.yaml"]
+    user: "0"
+    volumes:
+      - ./collector.yaml:/etc/otelcol/collector.yaml:ro
+      - ./out:/out
+
+  db:
+    <<: *service
+    image: ${REGISTRY:-et-local}/db:${TAG:-dev}
+    build: ../src/db
+    platform: linux/amd64
+    environment:
+      SA_PASSWORD: yourStrong(!)Password
+    mem_limit: 1536m
+
+  rabbitmq:
+    <<: *service
+    image: ${REGISTRY:-et-local}/rabbitmq:${TAG:-dev}
+    build: ../src/rabbitmq
+    mem_limit: 256m
+
+  calculationservice:
+    <<: *service
+    profiles: [extra]
+    image: ${REGISTRY:-et-local}/calculationservice:${TAG:-dev}
+    build: ../src/calculationservice
+    platform: linux/amd64
+    environment:
+      <<: *rabbit-vars
+
+  frontend:
+    <<: *service
+    image: ${REGISTRY:-et-local}/frontend:${TAG:-dev}
+    build: ../src/frontend
+
+  loadgen:
+    <<: *service
+    profiles: [extra]
+    image: ${REGISTRY:-et-local}/loadgen:${TAG:-dev}
+    build: ../src/loadgen
+    platform: linux/amd64
+    environment:
+      EASYTRADE_URL: http://frontendreverseproxy:8080
+
+  contentcreator:
+    <<: *service
+    image: ${REGISTRY:-et-local}/contentcreator:${TAG:-dev}
+    build: ../src/contentcreator
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: contentcreator
+      MSSQL_CONNECTIONSTRING: *java-connection-string
+    mem_limit: 656m
+
+  manager:
+    <<: *service
+    image: ${REGISTRY:-et-local}/manager:${TAG:-dev}
+    build: ../src/manager/easyTradeManager
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: manager
+      MSSQL_CONNECTIONSTRING: *dotnet-connection-string
+      PROXY_PREFIX: manager
+    mem_limit: 728m
+
+  pricing-service:
+    <<: *service
+    image: ${REGISTRY:-et-local}/pricing-service:${TAG:-dev}
+    build: ../src/pricing-service
+    environment:
+      <<: [*otel, *rabbit-vars]
+      OTEL_SERVICE_NAME: pricing-service
+      MSSQL_CONNECTIONSTRING: *go-connection-string
+      PROXY_PREFIX: pricing-service
+    mem_limit: 128m
+
+  broker-service:
+    <<: *service
+    image: ${REGISTRY:-et-local}/broker-service:${TAG:-dev}
+    build: ../src/broker-service
+    environment:
+      <<: [*otel, *feature-flag-service-env]
+      OTEL_SERVICE_NAME: broker-service
+      ACCOUNTSERVICE_HOSTANDPORT: accountservice:8080
+      PRICINGSERVICE_HOSTANDPORT: pricing-service:8080
+      ENGINE_HOSTANDPORT: engine:8080
+      PROXY_PREFIX: broker-service
+      MSSQL_CONNECTIONSTRING: *dotnet-connection-string
+    mem_limit: 478m
+
+  loginservice:
+    <<: *service
+    image: ${REGISTRY:-et-local}/loginservice:${TAG:-dev}
+    build: ../src/loginservice
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: loginservice
+      MSSQL_CONNECTIONSTRING: *dotnet-connection-string
+      PROXY_PREFIX: loginservice
+    mem_limit: 578m
+
+  frontendreverseproxy:
+    <<: *service
+    image: ${REGISTRY:-et-local}/frontendreverseproxy:${TAG:-dev}
+    build: ../src/frontendreverseproxy
+    ports:
+      - "${PROXY_PORT:-8080}:8080"
+    environment:
+      OTEL_SERVICE_NAME: frontendreverseproxy
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=easytrade,service.version=${TAG:-dev},deployment.environment.name=telemetry-check
+      OTEL_EXPORTER_OTLP_ENDPOINT: collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      FRONTEND_REVERSE_PROXY_PORT: "8080"
+      FRONTEND_URL: http://frontend:3000
+    mem_limit: 132m
+
+  offerservice:
+    <<: *service
+    image: ${REGISTRY:-et-local}/offerservice:${TAG:-dev}
+    build: ../src/offerservice
+    environment:
+      <<: [*otel, *feature-flag-service-env]
+      OTEL_SERVICE_NAME: offerservice
+      LOGIN_SERVICE_PORT: "8080"
+      LOGIN_SERVICE_BASE_URL: loginservice
+      MANAGER_BASE_URL: manager
+      MANAGER_PORT: "8080"
+    mem_limit: 1g
+
+  accountservice:
+    <<: *service
+    image: ${REGISTRY:-et-local}/accountservice:${TAG:-dev}
+    build: ../src/accountservice
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: accountservice
+      MANAGER_HOSTANDPORT: manager:8080
+      PROXY_PREFIX: accountservice
+    mem_limit: 856m
+
+  engine:
+    <<: *service
+    image: ${REGISTRY:-et-local}/engine:${TAG:-dev}
+    build: ../src/engine
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: engine
+      BROKER_HOSTANDPORT: broker-service:8080
+      PROXY_PREFIX: engine
+    mem_limit: 706m
+
+  credit-card-order-service:
+    <<: *service
+    image: ${REGISTRY:-et-local}/credit-card-order-service:${TAG:-dev}
+    build: ../src/credit-card-order-service
+    environment:
+      <<: [*otel, *feature-flag-service-env]
+      OTEL_SERVICE_NAME: credit-card-order-service
+      PROXY_PREFIX: credit-card-order-service
+      MSSQL_CONNECTIONSTRING: *java-connection-string
+      THIRD_PARTY_SERVICE_HOSTANDPORT: third-party-service:8080
+      WORK_DELAY: "10"
+      WORK_RATE: "10"
+      JAVA_TOOL_OPTIONS: "-XX:-OmitStackTraceInFastThrow"
+    mem_limit: 906m
+
+  third-party-service:
+    <<: *service
+    image: ${REGISTRY:-et-local}/third-party-service:${TAG:-dev}
+    build: ../src/third-party-service
+    environment:
+      <<: [*otel, *feature-flag-service-env]
+      OTEL_SERVICE_NAME: third-party-service
+      PROXY_PREFIX: third-party-service
+      CREDIT_CARD_ORDER_SERVICE_HOSTANDPORT: credit-card-order-service:8080
+      COURIER_DELAY: "10"
+      COURIER_RATE: "10"
+      MANUFACTURE_DELAY: "10"
+      MANUFACTURE_RATE: "10"
+    mem_limit: 706m
+
+  feature-flag-service:
+    <<: *service
+    image: ${REGISTRY:-et-local}/feature-flag-service:${TAG:-dev}
+    build: ../src/feature-flag-service
+    environment:
+      <<: [*otel, *feature-flag-service-env]
+      OTEL_SERVICE_NAME: feature-flag-service
+      PROXY_PREFIX: feature-flag-service
+    mem_limit: 856m
+
+  aggregator-service:
+    <<: *service
+    image: ${REGISTRY:-et-local}/aggregator-service:${TAG:-dev}
+    build: ../src/aggregator-service
+    environment:
+      <<: *otel
+      OTEL_SERVICE_NAME: aggregator-service
+      OFFER_SERVICE_PROTOCOL: http
+      OFFER_SERVICE_HOST: offerservice
+      OFFER_SERVICE_PORT: "8080"
+    mem_limit: 64m
