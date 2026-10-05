@@ -9,9 +9,24 @@ global:
   labels: {}
   # Environment variables to be added to all pods
   env: {}
+  # OpenTelemetry export for the instrumented components (those with otel.enabled below).
+  otel:
+    # OTLP/HTTP endpoint of the collector, for example http://otel-collector.observability:4318.
+    # Empty: the agents stay loaded but export nothing.
+    endpoint: ""
+    # OTLP/gRPC endpoint (host:port) for frontendreverseproxy, whose nginx module only speaks gRPC.
+    # Empty: the host of endpoint with port 4317.
+    grpcEndpoint: ""
+    serviceNamespace: easytrade
+    # deployment.environment.name; omitted when empty.
+    deploymentEnvironment: ""
+    # Further resource attributes for every instrumented component, as key: value.
+    resourceAttributes: {}
 
 accountservice:
   enabled: true
+  otel:
+    enabled: true
   # Example of overriding the image repository for a specific service
   # image:
   #   repository: europe-docker.pkg.dev/dynatrace-demoability/docker/easytrade/accountservice
@@ -22,16 +37,18 @@ accountservice:
   resources:
     requests:
       cpu: 30m
-      memory: 600Mi
+      memory: 856Mi
     limits:
-      cpu: 200m
-      memory: 600Mi
+      cpu: 500m
+      memory: 856Mi
   service:
     enabled: true
     port: 8080
 
 aggregator-service:
   enabled: true
+  otel:
+    enabled: true
   env:
     OFFER_SERVICE_PROTOCOL: "http"
     OFFER_SERVICE_HOST: "{{ .Release.Name }}-offerservice"
@@ -39,13 +56,15 @@ aggregator-service:
   resources:
     requests:
       cpu: 10m
-      memory: 30Mi
+      memory: 64Mi
     limits:
       cpu: 200m
-      memory: 30Mi
+      memory: 64Mi
 
 broker-service:
   enabled: true
+  otel:
+    enabled: true
   env:
     ACCOUNTSERVICE_HOSTANDPORT: "{{ .Release.Name }}-accountservice:8080"
     PRICINGSERVICE_HOSTANDPORT: "{{ .Release.Name }}-pricing-service:8080"
@@ -61,10 +80,10 @@ broker-service:
   resources:
     requests:
       cpu: 150m
-      memory: 350Mi
+      memory: 478Mi
     limits:
       cpu: 600m
-      memory: 350Mi
+      memory: 478Mi
   service:
     enabled: true
     port: 8080
@@ -87,6 +106,8 @@ calculationservice:
 
 contentcreator:
   enabled: true
+  otel:
+    enabled: true
   envFromSecret:
     MSSQL_CONNECTIONSTRING:
       name: "{{ .Release.Name }}-connection-strings"
@@ -94,13 +115,15 @@ contentcreator:
   resources:
     requests:
       cpu: 10m
-      memory: 400Mi
+      memory: 656Mi
     limits:
-      cpu: 200m
-      memory: 400Mi
+      cpu: 500m
+      memory: 656Mi
 
 credit-card-order-service:
   enabled: true
+  otel:
+    enabled: true
   env:
     PROXY_PREFIX: "credit-card-order-service"
     THIRD_PARTY_SERVICE_HOSTANDPORT: "{{ .Release.Name }}-third-party-service:8080"
@@ -117,10 +140,10 @@ credit-card-order-service:
   resources:
     requests:
       cpu: 20m
-      memory: 650Mi
+      memory: 906Mi
     limits:
       cpu: 500m
-      memory: 650Mi
+      memory: 906Mi
   service:
     enabled: true
     port: 8080
@@ -150,22 +173,26 @@ db:
 
 engine:
   enabled: true
+  otel:
+    enabled: true
   env:
     BROKER_HOSTANDPORT: "{{ .Release.Name }}-broker-service:8080"
     PROXY_PREFIX: "engine"
   resources:
     requests:
       cpu: 10m
-      memory: 450Mi
+      memory: 706Mi
     limits:
-      cpu: 200m
-      memory: 450Mi
+      cpu: 500m
+      memory: 706Mi
   service:
     enabled: true
     port: 8080
 
 feature-flag-service:
   enabled: true
+  otel:
+    enabled: true
   env:
     FEATURE_FLAG_SERVICE_PROTOCOL: http
     FEATURE_FLAG_SERVICE_BASE_URL: "{{ .Release.Name }}-feature-flag-service"
@@ -173,10 +200,10 @@ feature-flag-service:
   resources:
     requests:
       cpu: 30m
-      memory: 600Mi
+      memory: 856Mi
     limits:
-      cpu: 200m
-      memory: 600Mi
+      cpu: 500m
+      memory: 856Mi
   service:
     enabled: true
     port: 8080
@@ -196,6 +223,9 @@ frontend:
 
 frontendreverseproxy:
   enabled: true
+  otel:
+    enabled: true
+    protocol: grpc
   env:
     FRONTEND_REVERSE_PROXY_PORT: "8080"
     ACCOUNT_SERVICE_URL: "http://{{ .Release.Name }}-accountservice:8080"
@@ -212,10 +242,10 @@ frontendreverseproxy:
   resources:
     requests:
       cpu: 50m
-      memory: 100Mi
+      memory: 132Mi
     limits:
       cpu: 200m
-      memory: 100Mi
+      memory: 132Mi
   service:
     enabled: true
     ports:
@@ -239,6 +269,8 @@ loadgen:
 
 loginservice:
   enabled: true
+  otel:
+    enabled: true
   env:
     PROXY_PREFIX: "loginservice"
   envFromSecret:
@@ -248,16 +280,18 @@ loginservice:
   resources:
     requests:
       cpu: 20m
-      memory: 450Mi
+      memory: 578Mi
     limits:
       cpu: 1
-      memory: 450Mi
+      memory: 578Mi
   service:
     enabled: true
     port: 8080
 
 manager:
   enabled: true
+  otel:
+    enabled: true
   env:
     PROXY_PREFIX: "manager"
   envFromSecret:
@@ -267,16 +301,18 @@ manager:
   resources:
     requests:
       cpu: 50m
-      memory: 600Mi
+      memory: 728Mi
     limits:
       cpu: 500m
-      memory: 600Mi
+      memory: 728Mi
   service:
     enabled: true
     port: 8080
 
 offerservice:
   enabled: true
+  otel:
+    enabled: true
   env:
     LOGIN_SERVICE_PORT: "8080"
     LOGIN_SERVICE_BASE_URL: "{{ .Release.Name }}-loginservice"
@@ -288,7 +324,7 @@ offerservice:
   resources:
     requests:
       cpu: 100m
-      memory: 150Mi
+      memory: 214Mi
     limits:
       cpu: "1"
       memory: 1Gi
@@ -298,8 +334,8 @@ offerservice:
 
 pricing-service:
   enabled: true
-  image:
-    repository: europe-docker.pkg.dev/dynatrace-demoability/docker/easytrade/pricing-service
+  otel:
+    enabled: true
   env:
     PROXY_PREFIX: "pricing-service"
     RABBITMQ_USER: userxxx
@@ -314,10 +350,10 @@ pricing-service:
   resources:
     requests:
       cpu: 20m
-      memory: 80Mi
+      memory: 128Mi
     limits:
       cpu: 200m
-      memory: 80Mi
+      memory: 128Mi
   service:
     enabled: true
     port: 8080
@@ -377,6 +413,8 @@ rabbitmq:
 
 third-party-service:
   enabled: true
+  otel:
+    enabled: true
   env:
     CREDIT_CARD_ORDER_SERVICE_HOSTANDPORT: "{{ .Release.Name }}-credit-card-order-service:8080"
     PROXY_PREFIX: "third-party-service"
@@ -390,10 +428,10 @@ third-party-service:
   resources:
     requests:
       cpu: 10m
-      memory: 450Mi
+      memory: 706Mi
     limits:
-      cpu: 200m
-      memory: 450Mi
+      cpu: 500m
+      memory: 706Mi
   service:
     enabled: true
     port: 8080

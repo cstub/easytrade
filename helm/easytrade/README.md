@@ -33,6 +33,11 @@ The following table lists the configurable global parameters and their default v
 | `global.labels` | Additional labels to add to all resources | `{}` |
 | `global.env` | Environment variables to add to all pods | `{}` |
 | `global.dynatrace.version` | Dynatrace version identifier | `1.1.1` |
+| `global.otel.endpoint` | OTLP/HTTP endpoint for the instrumented services, e.g. `http://otel-collector:4318`. Empty: agents load but export nothing | `""` |
+| `global.otel.grpcEndpoint` | OTLP/gRPC endpoint (`host:port`) for `frontendreverseproxy` | host of `global.otel.endpoint`, port `4317` |
+| `global.otel.serviceNamespace` | `service.namespace` resource attribute | `easytrade` |
+| `global.otel.deploymentEnvironment` | `deployment.environment.name` resource attribute, omitted when empty | `""` |
+| `global.otel.resourceAttributes` | Further resource attributes, `key: value` | `{}` |
 
 ### Service Configuration
 
@@ -47,6 +52,8 @@ Each service can be configured individually. All services share the same configu
 | `<service>.workloadType` | Workload type: `deployment` or `statefulset` | `deployment` |
 | `<service>.env` | Environment variables (key-value pairs) | `{}` |
 | `<service>.envFromSecret` | Environment variables from secrets | `{}` |
+| `<service>.otel.enabled` | Set the OpenTelemetry variables (`OTEL_SERVICE_NAME` = service name, `OTEL_RESOURCE_ATTRIBUTES` with `service.version` = image tag, exporter settings) | `true` for the 13 instrumented services |
+| `<service>.otel.protocol` | OTLP protocol of the service: `http/protobuf` or `grpc` | `http/protobuf` (`grpc` for `frontendreverseproxy`) |
 | `<service>.resources.requests` | Resource requests (CPU, memory) | Service-specific |
 | `<service>.resources.limits` | Resource limits (CPU, memory) | Service-specific |
 | `<service>.service.enabled` | Create Kubernetes Service | `false` |

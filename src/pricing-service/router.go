@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func Logger() gin.HandlerFunc {
@@ -25,7 +26,7 @@ func Logger() gin.HandlerFunc {
 		latency := time.Since(startTime)
 		requestString := fmt.Sprintf("%s %s", ctx.Request.Method, ctx.Request.URL)
 
-		log.WithFields(log.Fields{
+		log.WithContext(ctx.Request.Context()).WithFields(log.Fields{
 			"request": requestString,
 			"status":  ctx.Writer.Status(),
 			"latency": latency,
@@ -37,6 +38,7 @@ func Logger() gin.HandlerFunc {
 func CreateRouter() *gin.Engine {
 	router := gin.New()
 
+	router.Use(otelgin.Middleware(serviceName))
 	router.Use(cors.Default())
 	router.Use(gin.Recovery())
 	router.Use(Logger())

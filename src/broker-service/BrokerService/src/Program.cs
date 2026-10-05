@@ -5,6 +5,9 @@ using EasyTrade.BrokerService.Helpers.Logging;
 using EasyTrade.BrokerService.Middleware.CreditCardValidation;
 using EasyTrade.BrokerService.ProblemPatterns.HighCpuUsage;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Logging.Debug;
+using Microsoft.Extensions.Logging.EventSource;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,8 +35,25 @@ builder.Services.AddDbContext<BrokerDbContext>(options =>
     options.UseSqlServer(builder.Configuration[Constants.MsSqlConnectionString])
 );
 
-// Clear default logging providers and and new ones
-builder.Logging.ClearProviders();
+// Replace the built-in logging providers with the custom one. ClearProviders() would also
+// remove the OpenTelemetry logger provider that the automatic instrumentation registers.
+Type[] builtInLoggerProviders =
+[
+    typeof(ConsoleLoggerProvider),
+    typeof(DebugLoggerProvider),
+    typeof(EventSourceLoggerProvider),
+];
+foreach (
+    var descriptor in builder
+        .Services.Where(d =>
+            d.ServiceType == typeof(ILoggerProvider)
+            && builtInLoggerProviders.Contains(d.ImplementationType)
+        )
+        .ToList()
+)
+{
+    builder.Services.Remove(descriptor);
+}
 builder.Logging.AddCustomLogger(options =>
 {
     options.SkipString = "EasyTrade.BrokerService.";

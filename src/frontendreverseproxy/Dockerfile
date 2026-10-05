@@ -1,6 +1,11 @@
-FROM nginx:1.29.0-alpine3.22-slim@sha256:64daa9307345a975d3952f4252827ed4be7f03ea675ad7bb5821f75ad3d43095
+# The -otel variant of the same nginx version ships ngx_otel_module (OTLP/gRPC traces only).
+FROM nginx:1.29.0-alpine3.22-otel@sha256:8df5f99417893742f475f37513c29692b9e630d66d87fb3ad4e12bdbbd6137a2
 
-RUN rm /etc/nginx/conf.d/default.conf
+RUN rm /etc/nginx/conf.d/default.conf \
+    && sed -i '1i load_module modules/ngx_otel_module.so;' /etc/nginx/nginx.conf
+
+# Turns the OTEL_* environment variables into ngx_otel_module settings at startup.
+COPY --chmod=755 otel.sh /docker-entrypoint.d/25-otel.sh
 
 COPY nginx.conf /etc/nginx/templates/nginx.conf.template
 
@@ -18,6 +23,8 @@ ENV LOGIN_SERVICE_URL=http://loginservice:8080 \
     THIRD_PARTY_SERVICE_URL=http://third-party-service:8080 \
     FEATURE_FLAG_SERVICE_URL=http://feature-flag-service:8080 \
     FRONTEND_URL=http://frontend:3000/ \
-    FRONTEND_REVERSE_PROXY_PORT=80
+    FRONTEND_REVERSE_PROXY_PORT=80 \
+    OTEL_SERVICE_NAME=frontendreverseproxy \
+    OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
 
 CMD ["nginx", "-g", "daemon off;"]

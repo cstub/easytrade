@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/plugin/opentelemetry/tracing"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -42,6 +43,10 @@ func ConnectToDB() {
 
 	if dbConnError != nil {
 		log.Fatal(dbConnError)
+	}
+
+	if err := DB.Use(tracing.NewPlugin(tracing.WithDBSystem("mssql"))); err != nil {
+		log.Fatal(err)
 	}
 
 	log.Info("Connected to the database")

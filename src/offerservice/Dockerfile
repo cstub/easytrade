@@ -23,4 +23,10 @@ RUN npm ci --omit=dev \
 
 COPY --chown=easytrade:easytrade --from=build ["app/dist", "./dist"]
 
-CMD [ "node", "./dist/src/app.js" ]
+# OpenTelemetry Node.js auto-instrumentation must load before the application modules.
+# OTEL_* environment variables configure it; the Winston logs reach it through
+# @opentelemetry/winston-transport, so no transport is added to the logger by hand.
+# Only local resource detectors: the cloud ones probe metadata endpoints at startup.
+ENV OTEL_NODE_RESOURCE_DETECTORS=env,host,os,process,container
+
+CMD [ "node", "--require", "@opentelemetry/auto-instrumentations-node/register", "./dist/src/app.js" ]

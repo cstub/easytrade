@@ -4,7 +4,9 @@ import (
 	"os"
 	"sync"
 
+	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/term"
 )
 
@@ -21,7 +23,10 @@ func Get() *zap.Logger {
 		}
 		config.DisableStacktrace = true
 
-		logger = zap.Must(config.Build())
+		// Every record also goes to the OpenTelemetry logger provider.
+		logger = zap.Must(config.Build(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return zapcore.NewTee(core, otelzap.NewCore("aggregator-service"))
+		})))
 	})
 	return logger
 }

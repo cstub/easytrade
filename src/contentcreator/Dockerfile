@@ -12,6 +12,11 @@ RUN ./gradlew test fatJar
 
 FROM eclipse-temurin:21.0.8_9-jre-alpine-3.22@sha256:990397e0495ac088ab6ee3d949a2e97b715a134d8b96c561c5d130b3786a489d
 
+# OpenTelemetry Java agent, loaded by CMD below and configured through OTEL_* environment variables.
+ADD --checksum=sha256:bbf83c151b6400709e2f225bdd07a04f839d9d13b8b93464241333fd25d3e3ba --chmod=644 \
+    https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.31.1/opentelemetry-javaagent.jar \
+    /opt/opentelemetry-javaagent.jar
+
 RUN addgroup --system --gid 3369 spring \
     && adduser --system --ingroup spring --uid 3369 spring
 USER spring:spring
@@ -19,4 +24,4 @@ WORKDIR /home/spring
 
 COPY --from=build --chown=spring:spring ["/app/build/libs/*.jar", "app.jar"]
 
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-javaagent:/opt/opentelemetry-javaagent.jar", "-jar", "app.jar"]
