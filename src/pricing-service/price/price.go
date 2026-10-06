@@ -19,7 +19,7 @@ type price struct {
 }
 
 type pricesResult struct {
-	Results []price `json:"results" xml:"results"`
+	Results []price `json:"data" xml:"results"`
 }
 
 func (p *price) toCSV(volume int) string {
